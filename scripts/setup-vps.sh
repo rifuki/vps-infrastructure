@@ -148,12 +148,22 @@ ok "Essential packages installed"
 if ! command -v docker &>/dev/null; then
   log "Installing Docker..."
   curl -fsSL https://get.docker.com | bash
-  usermod -aG docker "$REAL_USER"
   systemctl enable docker
   systemctl start docker
   ok "Docker installed"
 else
   ok "Docker already installed ($(docker --version))"
+fi
+
+# Tambahkan user ke docker group (berlaku di session berikutnya)
+if ! groups "$REAL_USER" | grep -q docker; then
+  usermod -aG docker "$REAL_USER"
+  ok "User '$REAL_USER' ditambahkan ke docker group"
+  # Aktifkan langsung untuk sesi ini tanpa re-login
+  # (hanya berlaku untuk proses yang dijalankan via script ini)
+  export DOCKER_GROUP_ADDED=true
+else
+  ok "User '$REAL_USER' sudah di docker group"
 fi
 
 # ── 4. Install Docker Compose plugin ─────────────────────────────────────────
@@ -249,8 +259,13 @@ fi
 echo ""
 ok "=== VPS Setup Complete ==="
 echo ""
+if [ "$DOCKER_GROUP_ADDED" = "true" ]; then
+  echo -e "${YELLOW}PENTING:${NC} Jalankan perintah ini agar docker group langsung aktif:"
+  echo -e "  ${BOLD}newgrp docker${NC}"
+  echo ""
+fi
 echo "Next steps:"
-echo "  1. Logout dan login lagi (untuk Docker group)"
+echo "  1. Jalankan: newgrp docker  (aktifkan docker group tanpa re-login)"
 echo "  2. Test Docker: docker ps"
 echo "  3. Test Caddy: sudo systemctl status caddy"
 echo "  4. Deploy project: vps-deploy <project-name>"
