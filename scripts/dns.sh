@@ -24,9 +24,12 @@ ok()   { echo -e "${GREEN}[OK]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error(){ echo -e "${RED}[ERROR]${NC} $1"; }
 
-# Load token dari /etc/vps-infra.env kalau belum di-set
-if [ -z "$CF_API_TOKEN" ] && [ -f /etc/vps-infra.env ]; then
-  source /etc/vps-infra.env
+# Load token — cek home dir dulu, fallback ke /etc
+if [ -z "$CF_API_TOKEN" ]; then
+  [ -f "$HOME/.vps-infra.env" ] && source "$HOME/.vps-infra.env"
+fi
+if [ -z "$CF_API_TOKEN" ]; then
+  [ -r /etc/vps-infra.env ] && source /etc/vps-infra.env
 fi
 
 if [ -z "$CF_API_TOKEN" ]; then

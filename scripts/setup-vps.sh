@@ -131,6 +131,8 @@ if [ -f "$REPO_DIR/infrastructure/docker-compose.yml" ]; then
   # Auto-setup DNS untuk dockge
   if [ -f /etc/vps-infra.env ]; then
     source /etc/vps-infra.env
+  elif [ -f "$HOME/.vps-infra.env" ]; then
+    source "$HOME/.vps-infra.env"
   fi
   if [ -n "$CF_API_TOKEN" ]; then
     bash "$SCRIPT_DIR/dns.sh" "dockge.rifuki.dev" || warn "DNS setup untuk dockge gagal, lakukan manual."

@@ -102,8 +102,11 @@ EOF
 ok "Caddy config created at $CADDY_FILE"
 
 # Auto-create DNS record kalau CF_API_TOKEN tersedia
-if [ -z "$CF_API_TOKEN" ] && [ -f /etc/vps-infra.env ]; then
-  source /etc/vps-infra.env
+if [ -z "$CF_API_TOKEN" ]; then
+  [ -f "$HOME/.vps-infra.env" ] && source "$HOME/.vps-infra.env"
+fi
+if [ -z "$CF_API_TOKEN" ]; then
+  [ -r /etc/vps-infra.env ] && source /etc/vps-infra.env
 fi
 
 if [ -n "$CF_API_TOKEN" ]; then
