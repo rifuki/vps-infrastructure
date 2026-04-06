@@ -10,10 +10,11 @@ curl -fsSL https://raw.githubusercontent.com/rifuki/server/main/setup.sh | bash
 
 ## Services
 
-| Service   | URL                              |
-|-----------|----------------------------------|
-| Traefik   | `http://localhost:8081` (SSH tunnel) |
-| Portainer | `https://portainer.rifuki.dev`   |
+| Service            | URL                                       |
+|--------------------|-------------------------------------------|
+| Traefik (proxy)    | `:80` / `:443` — semua domain otomatis    |
+| Traefik (dashboard)| `http://localhost:8081` via SSH tunnel    |
+| Portainer          | `https://portainer.rifuki.dev`            |
 
 ## Structure
 
