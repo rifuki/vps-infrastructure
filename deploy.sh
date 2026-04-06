@@ -91,10 +91,24 @@ deploy_project() {
   log "Starting $project_name..."
   docker compose up -d --remove-orphans
   
-  # Wait for health check
-  log "Waiting for health check..."
-  sleep 5
-  
+  # Wait for containers to start
+  log "Waiting for containers to start..."
+  local max_wait=30
+  local waited=0
+  while [ $waited -lt $max_wait ]; do
+    local all_running=true
+    for container in $(docker compose ps -q 2>/dev/null); do
+      local s=$(docker inspect --format='{{.State.Status}}' "$container")
+      if [ "$s" != "running" ]; then
+        all_running=false
+        break
+      fi
+    done
+    [ "$all_running" = true ] && break
+    sleep 2
+    waited=$((waited + 2))
+  done
+
   # Check if containers are healthy
   local failed=0
   for container in $(docker compose ps -q 2>/dev/null); do

@@ -46,8 +46,11 @@ vps-deploy portfolio-terminal
 vps-infrastructure/
 ├── README.md                 # This file
 ├── deploy.sh                 # Main deployment script
+├── infrastructure/
+│   └── docker-compose.yml   # Infra tools (Dockge, etc.)
 ├── scripts/
-│   ├── setup-vps.sh         # VPS initialization
+│   ├── setup-vps.sh         # VPS initialization (includes infra)
+│   ├── new-project.sh       # Scaffold new project from template
 │   └── cross-build.sh       # Mac → VPS build helper
 ├── projects/                 # Project deployment configs
 │   ├── template/            # Template for new projects
@@ -59,6 +62,18 @@ vps-infrastructure/
 │   └── *.caddy             # Per-project configs
 └── apps/                    # (On VPS) Source code
 ```
+
+## 🛠️ Infrastructure Tools
+
+Disetup otomatis saat `setup-vps.sh` dijalankan.
+
+| Tool | URL | Fungsi |
+|------|-----|--------|
+| Dockge | https://dockge.rifuki.dev | Manage docker-compose stacks via UI |
+
+> Dockge membutuhkan akun saat pertama kali dibuka di browser.
+
+---
 
 ## 🔄 Project Types
 
@@ -114,28 +129,20 @@ sudo systemctl reload caddy
 ### Option A: Docker-based (Recommended for new projects)
 
 ```bash
-# 1. Copy template
-cp -r projects/template projects/my-new-project
+# 1. Scaffold from template (auto-creates project + Caddy config)
+./scripts/new-project.sh my-new-project 9001 my-new-project.rifuki.dev my-binary
 
-# 2. Edit configs
-vim projects/my-new-project/docker-compose.yml  # Set port (e.g., 9000)
-vim projects/my-new-project/Dockerfile          # Your app
-
-# 3. Create Caddy config
-cat > caddy-configs/my-new-project.caddy << 'EOF'
-my-new-project.rifuki.dev {
-    reverse_proxy localhost:9000
-    encode gzip
-}
-EOF
+# 2. Copy your source code into projects/my-new-project/
+# 3. Setup env
+cp projects/my-new-project/.env.example projects/my-new-project/.env
+vim projects/my-new-project/.env
 
 # 4. Deploy
 vps-deploy my-new-project
 
-# 5. Commit & push
-git add .
-git commit -m "Add my-new-project"
-git push
+# 5. Reload Caddy & commit
+sudo systemctl reload caddy
+git add . && git commit -m "Add my-new-project" && git push
 ```
 
 ### Option B: Native (For existing projects)
@@ -271,8 +278,10 @@ sudo systemctl restart caddy
 
 ### Backup
 ```bash
-./scripts/backup-vps.sh
-# Creates: vps-backup-YYYYMMDD.tar.gz
+tar -czf vps-backup-$(date +%Y%m%d).tar.gz \
+  caddy-configs/ \
+  projects/*/docker-compose.yml \
+  projects/*/.env
 ```
 
 ### Restore

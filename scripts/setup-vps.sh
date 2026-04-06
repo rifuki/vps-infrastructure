@@ -120,14 +120,25 @@ if [ -d "$REPO_DIR/projects" ]; then
   ok "Projects directory setup"
 fi
 
-# 8. Create deploy script symlink
+# 8. Spin up infrastructure (Dockge, etc.)
+log "Starting infrastructure services..."
+mkdir -p /opt/stacks
+
+if [ -f "$REPO_DIR/infrastructure/docker-compose.yml" ]; then
+  docker compose -f "$REPO_DIR/infrastructure/docker-compose.yml" up -d
+  ok "Infrastructure services started (Dockge at dockge.rifuki.dev)"
+else
+  warn "infrastructure/docker-compose.yml not found, skipping."
+fi
+
+# 9. Create deploy script symlink
 if [ -f "$REPO_DIR/deploy.sh" ]; then
   ln -sf "$REPO_DIR/deploy.sh" /usr/local/bin/vps-deploy
   chmod +x "$REPO_DIR/deploy.sh"
   ok "Deploy script linked to /usr/local/bin/vps-deploy"
 fi
 
-# 9. Setup firewall (optional)
+# 10. Setup firewall (optional)
 log "Configuring firewall..."
 if command -v ufw &>/dev/null; then
   ufw allow 22/tcp
@@ -153,4 +164,7 @@ echo "  vps-deploy <project>     - Deploy a project"
 echo "  vps-deploy all           - Deploy all projects"
 echo "  docker ps                - List containers"
 echo "  sudo systemctl reload caddy  - Reload Caddy"
+echo ""
+echo "Infrastructure:"
+echo "  Dockge UI: https://dockge.rifuki.dev"
 echo ""

@@ -1,0 +1,4 @@
+dockge.rifuki.dev {
+	reverse_proxy localhost:5001
+	encode gzip
+}

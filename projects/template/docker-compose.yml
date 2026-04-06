@@ -1,6 +1,9 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        BINARY_NAME: {{BINARY_NAME}}
     container_name: {{PROJECT_NAME}}
     restart: unless-stopped
     ports:
@@ -11,8 +14,9 @@ services:
     # Add volumes if needed
     # volumes:
     #   - ./data:/app/data
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:{{PORT}}/health"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{PORT}}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
