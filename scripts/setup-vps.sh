@@ -127,6 +127,17 @@ mkdir -p /opt/stacks
 if [ -f "$REPO_DIR/infrastructure/docker-compose.yml" ]; then
   docker compose -f "$REPO_DIR/infrastructure/docker-compose.yml" up -d
   ok "Infrastructure services started (Dockge at dockge.rifuki.dev)"
+
+  # Auto-setup DNS untuk dockge
+  if [ -f /etc/vps-infra.env ]; then
+    source /etc/vps-infra.env
+  fi
+  if [ -n "$CF_API_TOKEN" ]; then
+    bash "$SCRIPT_DIR/dns.sh" "dockge.rifuki.dev" || warn "DNS setup untuk dockge gagal, lakukan manual."
+  else
+    warn "CF_API_TOKEN tidak ditemukan, skip DNS setup untuk dockge."
+    echo "  Simpan token di /etc/vps-infra.env lalu: ./scripts/dns.sh dockge.rifuki.dev"
+  fi
 else
   warn "infrastructure/docker-compose.yml not found, skipping."
 fi

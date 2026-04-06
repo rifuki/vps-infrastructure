@@ -101,6 +101,19 @@ EOF
 
 ok "Caddy config created at $CADDY_FILE"
 
+# Auto-create DNS record kalau CF_API_TOKEN tersedia
+if [ -z "$CF_API_TOKEN" ] && [ -f /etc/vps-infra.env ]; then
+  source /etc/vps-infra.env
+fi
+
+if [ -n "$CF_API_TOKEN" ]; then
+  log "Creating DNS record for $DOMAIN..."
+  bash "$SCRIPT_DIR/dns.sh" "$DOMAIN" && echo "" || warn "DNS setup gagal, lakukan manual."
+else
+  warn "CF_API_TOKEN tidak ditemukan, skip DNS setup."
+  echo "  Jalankan manual: ./scripts/dns.sh $DOMAIN"
+fi
+
 echo ""
 ok "=== Project '$PROJECT_NAME' created! ==="
 echo ""
@@ -110,4 +123,4 @@ echo "  2. Setup environment: cp $PROJECT_DIR/.env.example $PROJECT_DIR/.env && 
 echo "  3. Deploy: ./deploy.sh $PROJECT_NAME"
 echo "  4. Reload Caddy: sudo systemctl reload caddy"
 echo ""
-echo "Live at: https://$DOMAIN (after Caddy reload)"
+echo "Live at: https://$DOMAIN"
