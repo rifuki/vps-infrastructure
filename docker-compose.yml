@@ -16,22 +16,24 @@ services:
     networks:
       - traefik-public
 
-  dockge:
-    image: louislam/dockge:1
-    container_name: dockge
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:5001:5001"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - dockge-data:/app/data
-      - ${STACKS_DIR:-/opt/stacks}:/opt/stacks
-    environment:
-      - DOCKGE_STACKS_DIR=/opt/stacks
-      - DOCKGE_ENABLE_CONSOLE=true
+      - portainer-data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portainer.rule=Host(`portainer.rifuki.dev`)"
+      - "traefik.http.routers.portainer.entrypoints=websecure"
+      - "traefik.http.routers.portainer.tls.certresolver=letsencrypt"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+    networks:
+      - traefik-public
 
 volumes:
-  dockge-data:
+  portainer-data:
 
 networks:
   traefik-public:
