@@ -1,91 +1,193 @@
 # VPS Infrastructure
 
-Modular, scalable VPS infrastructure setup with Docker, Caddy reverse proxy, and automated deployment.
+Modular, scalable VPS infrastructure with **Caddy reverse proxy on host** and hybrid deployment (Docker + Native).
+
+## 🏗️ Architecture
+
+```
+Internet
+    ↓
+Caddy (Host:80/443) ← Auto SSL + Reverse Proxy
+    ↓
+┌──────────┬──────────┐
+│  Docker  │  Native  │
+│ Projects │ Projects │
+│:4040     │:8080     │
+└──────────┴──────────┘
+```
+
+**Why Caddy on Host?**
+- ✅ Simple & reliable (systemd)
+- ✅ Low resource usage
+- ✅ Easy debugging
+- ✅ Works with both Docker & native projects
 
 ## 🚀 Quick Start
 
-### New VPS Setup
+### Setup New VPS
 
 ```bash
-# 1. Clone this repo
+# 1. Clone repo
 git clone https://github.com/rifuki/vps-infrastructure.git
 cd vps-infrastructure
 
-# 2. Run setup
-./scripts/setup-vps.sh
+# 2. Setup VPS (installs Docker & Caddy)
+sudo ./scripts/setup-vps.sh
 
-# 3. Deploy your first project
+# 3. Deploy project
 ./deploy.sh portfolio-terminal
+# or
+vps-deploy portfolio-terminal
 ```
 
 ## 📁 Repository Structure
 
 ```
 vps-infrastructure/
-├── README.md
+├── README.md                 # This file
 ├── deploy.sh                 # Main deployment script
 ├── scripts/
 │   ├── setup-vps.sh         # VPS initialization
 │   └── cross-build.sh       # Mac → VPS build helper
-├── infrastructure/
-│   ├── docker-compose.yml   # Traefik/Caddy configs (optional)
-│   └── README.md
-├── projects/
-│   ├── template/            # Project template
-│   ├── naisu-one/
-│   ├── aksara/
-│   ├── simpasar/
-│   └── portfolio-terminal/
-└── caddy-configs/           # Caddy reverse proxy configs
-    ├── Caddyfile
-    └── *.caddy
+├── projects/                 # Project deployment configs
+│   ├── template/            # Template for new projects
+│   ├── portfolio-terminal/  # Docker-based
+│   ├── naisu-one/           # Docker-based  
+│   └── simpasar/            # Docker-based
+├── caddy-configs/           # Caddy reverse proxy
+│   ├── Caddyfile           # Main config
+│   └── *.caddy             # Per-project configs
+└── apps/                    # (On VPS) Source code
 ```
 
+## 🔄 Project Types
+
+### Type 1: Docker Project (Recommended)
+
+**Structure:**
+```yaml
+# projects/myapp/docker-compose.yml
+services:
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:9000:9000"  # Bind to localhost only
+    restart: unless-stopped
+```
+
+**Caddy Config:**
+```caddy
+# caddy-configs/myapp.caddy
+myapp.rifuki.dev {
+    reverse_proxy localhost:9000
+    encode gzip
+}
+```
+
+**Deploy:**
+```bash
+vps-deploy myapp
+```
+
+### Type 2: Native Project (For existing apps)
+
+**Example: Aksara (already running on port 8080)**
+
+**Caddy Config:**
+```caddy
+# caddy-configs/aksara.caddy
+api.aksara.rifuki.dev {
+    reverse_proxy localhost:8080
+    encode gzip
+}
+```
+
+**Reload Caddy:**
+```bash
+sudo systemctl reload caddy
+```
+
+**No Docker needed!** Caddy routes to `localhost:8080`
+
 ## 🛠️ Setup New Project
+
+### Option A: Docker-based (Recommended for new projects)
 
 ```bash
 # 1. Copy template
 cp -r projects/template projects/my-new-project
 
-# 2. Edit configuration
-vim projects/my-new-project/docker-compose.yml
-vim caddy-configs/my-new-project.caddy
+# 2. Edit configs
+vim projects/my-new-project/docker-compose.yml  # Set port (e.g., 9000)
+vim projects/my-new-project/Dockerfile          # Your app
 
-# 3. Deploy
-./deploy.sh my-new-project
+# 3. Create Caddy config
+cat > caddy-configs/my-new-project.caddy << 'EOF'
+my-new-project.rifuki.dev {
+    reverse_proxy localhost:9000
+    encode gzip
+}
+EOF
+
+# 4. Deploy
+vps-deploy my-new-project
+
+# 5. Commit & push
+git add .
+git commit -m "Add my-new-project"
+git push
 ```
 
-## 🔄 Cross-Compilation (Mac → VPS)
+### Option B: Native (For existing projects)
+
+```bash
+# 1. Just create Caddy config
+cat > caddy-configs/existing-app.caddy << 'EOF'
+existing-app.rifuki.dev {
+    reverse_proxy localhost:8080
+    encode gzip
+}
+EOF
+
+# 2. Reload Caddy
+sudo systemctl reload caddy
+
+# 3. Done! Your native app (port 8080) now has SSL
+```
+
+## 📊 Port Allocation
+
+| Project | Type | Port | Domain | Status |
+|---------|------|------|--------|--------|
+| portfolio-terminal | Docker | 4040 | terminal.rifuki.dev | ✅ |
+| naisu-one backend | Docker | 3939 | api.naisu.one | ⏳ |
+| naisu-one agent | Docker | 8787 | agent.naisu.one | ⏳ |
+| aksara | Native | 8080 | api.aksara.rifuki.dev | ✅ |
+| simpasar | Docker | 3001 | api.simpasar.rifuki.dev | ⏳ |
+
+**New projects:** Use ports 9000+
+
+## 🍎 Cross-Compilation (Mac → VPS)
 
 ### Prerequisites (Mac)
 ```bash
 # Install Rust target
 rustup target add x86_64-unknown-linux-gnu
 
-# Install cross-compilation toolchain
-brew install FiloSottile/musl-cross/musl-cross
+# Install linker
+brew install x86_64-linux-gnu-gcc
 ```
 
-### Build & Deploy
+### Build & Deploy Script
 ```bash
-# Build for Linux
-./scripts/cross-build.sh my-project
-
-# Deploy to VPS
-./scripts/deploy-from-mac.sh my-project
+# scripts/cross-build.sh <project> <vps-host>
+./scripts/cross-build.sh naisu-one rifuki@your-vps-ip
 ```
 
-## 📊 Port Allocation
-
-| Project | Service | Port | Domain |
-|---------|---------|------|--------|
-| portfolio-terminal | terminal | 4040 | terminal.rifuki.dev |
-| naisu-one | backend | 3939 | api.naisu.one |
-| naisu-one | agent | 8787 | agent.naisu.one |
-| aksara | api | 8080 | api.aksara.rifuki.dev |
-| simpasar | api | 3001 | api.simpasar.rifuki.dev |
-
-**New projects**: Use ports 9000+
+**What it does:**
+1. Build on Mac for Linux (x86_64)
+2. Transfer binary to VPS
+3. Deploy with Docker
 
 ## 🔧 Manual Setup (Without Scripts)
 
@@ -111,7 +213,7 @@ sudo cp caddy-configs/*.caddy /etc/caddy/conf.d/
 sudo systemctl reload caddy
 ```
 
-### 4. Deploy Project
+### 4. Deploy Docker Project
 ```bash
 cd projects/your-project
 docker compose up -d
@@ -119,7 +221,7 @@ docker compose up -d
 
 ## 📝 Environment Variables
 
-Create `.env` file in each project directory:
+Create `.env` in each project directory (auto-loaded by docker-compose):
 
 ```bash
 # projects/naisu-one/.env
@@ -132,54 +234,56 @@ AGENT_PORT=8787
 
 ### Check service status
 ```bash
+# Docker containers
 docker ps
+
+# Project logs
 docker compose -f projects/<name>/docker-compose.yml logs
+
+# Caddy status
 sudo systemctl status caddy
+sudo journalctl -u caddy -f
+
+# Test endpoint
+curl http://localhost:<port>/health
+curl https://<domain>/health
 ```
 
 ### Port already in use
 ```bash
+# Find process
 sudo lsof -i :<port>
-# Change port in docker-compose.yml and caddy config
+
+# Change port in:
+# 1. projects/<name>/docker-compose.yml
+# 2. caddy-configs/<name>.caddy
+# 3. Reload: sudo systemctl reload caddy
 ```
 
 ### SSL issues
 ```bash
+# Force certificate renewal
 sudo rm -rf /var/lib/caddy/.local/share/caddy/certificates
 sudo systemctl restart caddy
-```
-
-## 🏗️ Architecture
-
-```
-Internet
-    ↓
-Caddy (80/443) ← SSL Auto
-    ↓
-Project Containers (localhost ports)
-    ↓
-Services (Databases, etc.)
 ```
 
 ## 📦 Backup & Restore
 
 ### Backup
 ```bash
-tar -czf vps-backup-$(date +%Y%m%d).tar.gz \
-  caddy-configs/ \
-  projects/*/docker-compose.yml \
-  projects/*/.env
+./scripts/backup-vps.sh
+# Creates: vps-backup-YYYYMMDD.tar.gz
 ```
 
 ### Restore
 ```bash
 tar -xzf vps-backup-*.tar.gz
-./scripts/setup-vps.sh
+sudo ./scripts/setup-vps.sh
 ```
 
 ## 🤝 Contributing
 
-1. Add new project to `projects/`
+1. Add project to `projects/`
 2. Create Caddy config in `caddy-configs/`
 3. Update port allocation table
 4. Test on VPS
@@ -192,4 +296,3 @@ MIT - Free to use and modify
 ## 🆘 Support
 
 - Issues: [GitHub Issues](https://github.com/rifuki/vps-infrastructure/issues)
-- Wiki: [Documentation](https://github.com/rifuki/vps-infrastructure/wiki)

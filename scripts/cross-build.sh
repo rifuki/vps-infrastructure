@@ -23,7 +23,7 @@ REPO_DIR="$(dirname "$SCRIPT_DIR")"
 PROJECTS_DIR="$REPO_DIR/projects"
 BUILD_DIR="$REPO_DIR/builds"
 VPS_USER="${VPS_USER:-rifuki}"
-VPS_HOST="${VPS_HOST:-}""
+VPS_HOST="${VPS_HOST:-}"
 
 # Get project name
 PROJECT="$1"
