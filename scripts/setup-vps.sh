@@ -3,6 +3,12 @@
 # VPS Setup Script
 # Run this on fresh Ubuntu 24.04 VPS
 #
+# Usage:
+#   sudo ./scripts/setup-vps.sh                          # interactive
+#   sudo CF_API_TOKEN=xxx ./scripts/setup-vps.sh         # env var
+#   sudo ./scripts/setup-vps.sh --cf-token=xxx           # cli flag
+#   sudo ./scripts/setup-vps.sh --skip-dns               # skip DNS setup
+#
 
 set -e
 
@@ -29,46 +35,90 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+# ── Parse CLI flags ───────────────────────────────────────────────────────────
+SKIP_DNS=false
+CF_TOKEN_FLAG=""
+
+for arg in "$@"; do
+  case $arg in
+    --cf-token=*)
+      CF_TOKEN_FLAG="${arg#*=}"
+      ;;
+    --skip-dns)
+      SKIP_DNS=true
+      ;;
+    --help|-h)
+      echo "Usage: sudo $0 [options]"
+      echo ""
+      echo "Options:"
+      echo "  --cf-token=TOKEN   Cloudflare API token (DNS automation)"
+      echo "  --skip-dns         Skip DNS setup"
+      echo ""
+      echo "Alternatively via env var:"
+      echo "  sudo CF_API_TOKEN=TOKEN $0"
+      exit 0
+      ;;
+  esac
+done
+
 echo ""
 echo -e "${BOLD}================================================${NC}"
 echo -e "${BOLD}       VPS Infrastructure Setup                 ${NC}"
 echo -e "${BOLD}================================================${NC}"
 echo ""
 
-# ── Interaktif: kumpulkan semua config di awal ──────────────────────────────
+# ── Resolve CF_API_TOKEN: flag → env → file → interactive ────────────────────
+if [ "$SKIP_DNS" = false ]; then
+  # 1. CLI flag
+  if [ -n "$CF_TOKEN_FLAG" ]; then
+    CF_API_TOKEN="$CF_TOKEN_FLAG"
+    log "Using Cloudflare token from --cf-token flag"
 
-ask "Cloudflare API Token (untuk auto DNS setup):"
-ask "  Kosongkan jika ingin skip, setup DNS manual nanti."
-read -rsp "  CF_API_TOKEN: " CF_API_TOKEN_INPUT
-echo ""
+  # 2. Env var (sudah di-set sebelum script dijalankan)
+  elif [ -n "$CF_API_TOKEN" ]; then
+    log "Using Cloudflare token from environment variable"
 
-if [ -n "$CF_API_TOKEN_INPUT" ]; then
-  # Validasi token dulu
-  log "Validating Cloudflare API token..."
-  CF_CHECK=$(curl -sf "https://api.cloudflare.com/client/v4/user/tokens/verify" \
-    -H "Authorization: Bearer $CF_API_TOKEN_INPUT" \
-    -H "Content-Type: application/json" || echo '{"success":false}')
-  CF_VALID=$(echo "$CF_CHECK" | grep -o '"success":[^,}]*' | cut -d: -f2 | tr -d ' ')
+  # 3. File yang sudah ada
+  elif [ -f /etc/vps-infra.env ]; then
+    source /etc/vps-infra.env
+    [ -n "$CF_API_TOKEN" ] && log "Using Cloudflare token from /etc/vps-infra.env"
 
-  if [ "$CF_VALID" = "true" ]; then
-    ok "Cloudflare token valid"
-    CF_API_TOKEN="$CF_API_TOKEN_INPUT"
-
-    # Simpan ke /etc/vps-infra.env dan home user
-    echo "CF_API_TOKEN=$CF_API_TOKEN" > /etc/vps-infra.env
-    chmod 600 /etc/vps-infra.env
-    echo "CF_API_TOKEN=$CF_API_TOKEN" > "$REAL_HOME/.vps-infra.env"
-    chmod 600 "$REAL_HOME/.vps-infra.env"
-    chown "$REAL_USER:$REAL_USER" "$REAL_HOME/.vps-infra.env"
-    ok "Token saved to /etc/vps-infra.env and $REAL_HOME/.vps-infra.env"
-  else
-    warn "Token tidak valid, skip DNS automation."
-    CF_API_TOKEN=""
+  elif [ -f "$REAL_HOME/.vps-infra.env" ]; then
+    source "$REAL_HOME/.vps-infra.env"
+    [ -n "$CF_API_TOKEN" ] && log "Using Cloudflare token from ~/.vps-infra.env"
   fi
-else
-  warn "Skip Cloudflare setup. DNS harus di-pointing manual."
-  # Load dari file kalau sudah ada
-  [ -f /etc/vps-infra.env ] && source /etc/vps-infra.env
+
+  # 4. Interactive prompt (fallback)
+  if [ -z "$CF_API_TOKEN" ]; then
+    ask "Cloudflare API Token untuk auto DNS setup:"
+    ask "  (kosongkan untuk skip, atau gunakan --skip-dns)"
+    read -rsp "  CF_API_TOKEN: " CF_API_TOKEN
+    echo ""
+  fi
+
+  # Validasi dan simpan token
+  if [ -n "$CF_API_TOKEN" ]; then
+    log "Validating Cloudflare token..."
+    CF_CHECK=$(curl -sf "https://api.cloudflare.com/client/v4/user/tokens/verify" \
+      -H "Authorization: Bearer $CF_API_TOKEN" \
+      -H "Content-Type: application/json" || echo '{"success":false}')
+    CF_VALID=$(echo "$CF_CHECK" | grep -o '"success":[^,}]*' | cut -d: -f2 | tr -d ' ')
+
+    if [ "$CF_VALID" = "true" ]; then
+      ok "Cloudflare token valid"
+      echo "CF_API_TOKEN=$CF_API_TOKEN" > /etc/vps-infra.env
+      chmod 600 /etc/vps-infra.env
+      echo "CF_API_TOKEN=$CF_API_TOKEN" > "$REAL_HOME/.vps-infra.env"
+      chmod 600 "$REAL_HOME/.vps-infra.env"
+      chown "$REAL_USER:$REAL_USER" "$REAL_HOME/.vps-infra.env"
+      ok "Token saved"
+    else
+      warn "Token tidak valid, skip DNS automation."
+      CF_API_TOKEN=""
+    fi
+  else
+    warn "Skip Cloudflare setup. Jalankan manual: ./scripts/dns.sh <domain>"
+  fi
 fi
 
 echo ""
