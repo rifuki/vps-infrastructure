@@ -4,14 +4,14 @@ services:
     container_name: web3-backend
     restart: unless-stopped
     ports:
-      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9393:9393"
     env_file: .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - web3
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:9393/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -22,12 +22,12 @@ services:
     container_name: web3-agent
     restart: unless-stopped
     ports:
-      - "127.0.0.1:9001:9001"
+      - "127.0.0.1:3939:3939"
     env_file: .env
     networks:
       - web3
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9001/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3939/health"]
       interval: 30s
       timeout: 10s
       retries: 3
