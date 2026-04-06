@@ -1,4 +1,21 @@
 services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "127.0.0.1:8081:8080"  # Dashboard (localhost only, akses via SSH tunnel)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+    environment:
+      - DOCKER_API_VERSION=1.40
+    networks:
+      - traefik-public
+
   dockge:
     image: louislam/dockge:1
     container_name: dockge
@@ -8,7 +25,6 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - dockge-data:/app/data
-      # Dockge manages stacks langsung dari repo — source of truth tetap di git
       - ${STACKS_DIR:-/opt/stacks}:/opt/stacks
     environment:
       - DOCKGE_STACKS_DIR=/opt/stacks
@@ -16,3 +32,8 @@ services:
 
 volumes:
   dockge-data:
+
+networks:
+  traefik-public:
+    name: traefik-public
+    driver: bridge
