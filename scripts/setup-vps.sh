@@ -219,10 +219,13 @@ fi
 
 # ── 8. Spin up infrastructure (Dockge, etc.) ──────────────────────────────────
 log "Starting infrastructure services..."
-mkdir -p /opt/stacks
 
 if [ -f "$REPO_DIR/infrastructure/docker-compose.yml" ]; then
-  docker compose -f "$REPO_DIR/infrastructure/docker-compose.yml" up -d
+  # Generate .env untuk docker-compose agar STACKS_DIR dinamis per user
+  echo "STACKS_DIR=$REPO_DIR/projects" > "$REPO_DIR/infrastructure/.env"
+  ok "Stacks dir: $REPO_DIR/projects"
+
+  docker compose -f "$REPO_DIR/infrastructure/docker-compose.yml" up -d --force-recreate
   ok "Infrastructure services started"
 
   if [ -n "$CF_API_TOKEN" ]; then

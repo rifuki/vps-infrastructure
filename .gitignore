@@ -6,6 +6,7 @@
 # Environment files
 .env
 .env.local
+infrastructure/.env
 
 # IDE
 .idea/

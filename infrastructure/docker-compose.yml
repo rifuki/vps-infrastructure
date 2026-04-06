@@ -8,8 +8,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - dockge-data:/app/data
-      # Dockge manages stacks from this directory
-      - /opt/stacks:/opt/stacks
+      # Dockge manages stacks langsung dari repo — source of truth tetap di git
+      - ${STACKS_DIR:-/opt/stacks}:/opt/stacks
     environment:
       - DOCKGE_STACKS_DIR=/opt/stacks
       - DOCKGE_ENABLE_CONSOLE=true
