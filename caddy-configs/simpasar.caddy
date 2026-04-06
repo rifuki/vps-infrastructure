@@ -1,4 +1,0 @@
-api.simpasar.rifuki.dev {
-	reverse_proxy localhost:3001
-	encode gzip
-}

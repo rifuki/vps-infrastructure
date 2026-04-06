@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: /home/rifuki/portfolio-backend
+      dockerfile: Dockerfile.server
+    image: rifuki-terminal-server:latest
+    container_name: portfolio-terminal
+    restart: unless-stopped
+    environment:
+      - PORT=4040
+      - ALLOWED_ORIGIN=https://rifuki.dev
+      - MAX_SESSIONS=20
+      - NODE_ENV=production
+    ports:
+      - "127.0.0.1:4040:4040"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro

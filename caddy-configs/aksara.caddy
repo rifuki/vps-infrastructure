@@ -1,4 +1,0 @@
-api.aksara.rifuki.dev {
-	reverse_proxy localhost:8080
-	encode gzip
-}

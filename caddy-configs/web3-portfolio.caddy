@@ -1,9 +1,0 @@
-terminal.rifuki.dev {
-	reverse_proxy localhost:9393
-	encode gzip
-}
-
-agent.rifuki.dev {
-	reverse_proxy localhost:3939
-	encode gzip
-}

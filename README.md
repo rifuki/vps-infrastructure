@@ -166,11 +166,10 @@ sudo systemctl reload caddy
 
 | Project | Type | Port | Domain | Status |
 |---------|------|------|--------|--------|
-| portfolio-terminal | Docker | 4040 | terminal.rifuki.dev | ✅ |
-| naisu-one backend | Docker | 3939 | api.naisu.one | ⏳ |
-| naisu-one agent | Docker | 8787 | agent.naisu.one | ⏳ |
+| rifuki.dev backend | Docker | 9393 | backend.rifuki.dev | ✅ |
+| rifuki.dev agent | Docker | 3939 | miku.rifuki.dev | ✅ |
 | aksara | Native | 8080 | api.aksara.rifuki.dev | ✅ |
-| simpasar | Docker | 3001 | api.simpasar.rifuki.dev | ⏳ |
+| naisu-one | Docker | TBD | naisu.one | ⏳ |
 
 **New projects:** Use ports 9000+
 
