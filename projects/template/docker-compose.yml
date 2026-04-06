@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    container_name: {{PROJECT_NAME}}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:{{PORT}}:{{PORT}}"
+    environment:
+      - PORT={{PORT}}
+      - RUST_ENV=production
+    # Add volumes if needed
+    # volumes:
+    #   - ./data:/app/data
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:{{PORT}}/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3

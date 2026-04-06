@@ -1,0 +1,4 @@
+terminal.rifuki.dev {
+	reverse_proxy localhost:4040
+	encode gzip
+}

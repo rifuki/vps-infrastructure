@@ -1,0 +1,10 @@
+{
+	email admin@rifuki.dev
+	debug
+	log {
+		format console
+	}
+}
+
+# Include all project configurations
+import conf.d/*.caddy
