@@ -1,0 +1,48 @@
+services:
+  backend:
+    image: ghcr.io/rifuki/rifuki-terminal:latest
+    container_name: web3-backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9000:9000"
+    env_file: .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - web3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  agent:
+    image: ghcr.io/rifuki/miku-agent:latest
+    container_name: web3-agent
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9001:9001"
+    env_file: .env
+    networks:
+      - web3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  sandbox:
+    image: ghcr.io/rifuki/web3-sandbox:latest
+    container_name: web3-sandbox
+    restart: unless-stopped
+    # Tidak ada port keluar — diakses backend via Docker network
+    networks:
+      - web3
+    stdin_open: true
+    tty: true
+
+networks:
+  web3:
+    driver: bridge
