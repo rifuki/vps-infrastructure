@@ -1,6 +1,13 @@
 services:
   socket-proxy:
     image: tecnativa/docker-socket-proxy
+    container_name: infra-socket-proxy
+    # `always` (vs unless-stopped) restarts even on graceful exit (code 0),
+    # which is what happened during the disk-full incident — the daemon
+    # SIGTERM'd this container, and unless-stopped treats that as
+    # "user-intended stop" and refuses to bring it back. Without socket-proxy,
+    # Traefik can't discover any routes and every domain 404s.
+    restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
@@ -12,7 +19,7 @@ services:
   traefik:
     image: traefik:latest
     container_name: traefik
-    restart: unless-stopped
+    restart: always
     ports:
       - "80:80"
       - "443:443"
@@ -30,7 +37,7 @@ services:
   portainer:
     image: portainer/portainer-ce:latest
     container_name: portainer
-    restart: unless-stopped
+    restart: always
     userns_mode: "host"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
